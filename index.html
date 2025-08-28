@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Enhanced Science Quiz Game</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #eef;
+    margin: 20px;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  #score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+  #timer {
+    font-size: 1.2em;
+    color: red;
+    margin-bottom: 10px;
+  }
+  .question-container {
+    margin-top: 20px;
+    padding: 10px;
+    border: 2px solid #999;
+    border-radius: 8px;
+    background-color: #fff;
+  }
+  #question {
+    font-weight: bold;
+  }
+  .answers {
+    margin-top: 10px;
+  }
+  button {
+    margin: 5px;
+    padding: 10px;
+    cursor: pointer;
+  }
+  #shop {
+    margin-top: 30px;
+    border-top: 1px solid #999;
+    padding-top: 10px;
+  }
+  #message {
+    margin-top: 10px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<h1>Enhanced Science Quiz Game</h1>
+<div id="score">Points: 0</div>
+<div id="timer">Time: 30</div>
+<div class="question-container" id="question-container">
+  <div id="question"></div>
+  <div class="answers" id="answers"></div>
+</div>
+<button onclick="nextQuestion()">Next Question</button>
+
+<div id="shop">
+  <h2>Shop</h2>
+  <p>Use your points to buy hints and cool items!</p>
+  <button onclick="buyHint()">Buy a Beaker (Hint) - 10 points</button>
+  <button onclick="buySkip()">Skip Question - 15 points</button>
+  <div id="message"></div>
+</div>
+
+<script>
+const totalQuestions = 5;
+let questions = [];
+let currentQuestionIndex = 0;
+let points = 0;
+let hintUsed = false;
+let timerInterval;
+let timeLeft = 30;
+
+function generateQuestions() {
+  questions = [];
+  for (let i = 0; i < totalQuestions; i++) {
+    const qType = Math.floor(Math.random() * 4);
+    let questionText = '';
+    let answers = [];
+    let correctIndex = 0;
+
+    switch(qType) {
+      case 0:
+        questionText = "What is the control in a plant growth experiment?";
+        answers = ["A) The plant with fertilizer", "B) The plant without fertilizer", "C) The sunlight", "D) The water"];
+        correctIndex = 1;
+        break;
+      case 1:
+        questionText = "What is the independent variable?";
+        answers = ["A) The plant's height", "B) The amount of sunlight", "C) The type of soil", "D) Water amount"];
+        correctIndex = 1;
+        break;
+      case 2:
+        questionText = "What is the dependent variable?";
+        answers = ["A) The type of soil", "B) The plant's height", "C) The amount of water", "D) The sunlight"];
+        correctIndex = 1;
+        break;
+      case 3:
+        questionText = "What problem is in this sentence? 'The plant grew taller in the sunlight.'";
+        answers = ["A) The problem isn't clear", "B) The sentence is about sunlight", "C) The sentence is about a plant", "D) The sentence is about growth"];
+        correctIndex = 0;
+        break;
+    }
+    questions.push({question: questionText, answers: answers, correct: correctIndex});
+  }
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = 30;
+  document.getElementById('timer').innerText = `Time: ${timeLeft}`;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timer').innerText = `Time: ${timeLeft}`;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      alert('Time is up! Moving to next question.');
+      nextQuestion();
+    }
+  }, 1000);
+}
+
+function displayQuestion() {
+  if (questions.length === 0) {
+    generateQuestions();
+  }
+  const q = questions[currentQuestionIndex];
+  document.getElementById('question').innerText = q.question;
+  const answersDiv = document.getElementById('answers');
+  answersDiv.innerHTML = '';
+  q.answers.forEach((answer, index) => {
+    const btn = document.createElement('button');
+    btn.innerText = answer;
+    btn.onclick = () => {
+      clearInterval(timerInterval);
+      checkAnswer(index);
+    };
+    answersDiv.appendChild(btn);
+  });
+  hintUsed = false;
+  startTimer();
+}
+
+function checkAnswer(selectedIndex) {
+  const q = questions[currentQuestionIndex];
+  if (selectedIndex === q.correct) {
+    points += 5;
+    alert('Correct! +5 points.');
+  } else {
+    alert('Incorrect.');
+  }
+  document.getElementById('score').innerText = `Points: ${points}`;
+  currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+  displayQuestion();
+}
+
+function nextQuestion() {
+  clearInterval(timerInterval);
+  displayQuestion();
+}
+
+function buyHint() {
+  if (points >= 10 && !hintUsed) {
+    points -= 10;
+    document.getElementById('score').innerText = `Points: ${points}`;
+    document.getElementById('message').innerText = 'Hint: Think about variables and experiment parts!';
+    hintUsed = true;
+  } else if (hintUsed) {
+    document.getElementById('message').innerText = 'You already bought a hint for this question!';
+  } else {
+    document.getElementById('message').innerText = 'Not enough points!';
+  }
+}
+
+function buySkip() {
+  if (points >= 15) {
+    points -= 15;
+    document.getElementById('score').innerText = `Points: ${points}`;
+    alert('Question skipped!');
+    nextQuestion();
+  } else {
+    document.getElementById('message').innerText = 'Not enough points!';
+  }
+}
+
+// Initialize
+generateQuestions();
+displayQuestion();
+</script>
+
+</body>
+</html>
