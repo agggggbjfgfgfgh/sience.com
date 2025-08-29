@@ -3,198 +3,278 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Enhanced Science Quiz Game</title>
+<title>Science Quiz & Shop Game</title>
 <style>
   body {
     font-family: Arial, sans-serif;
-    background-color: #eef;
-    margin: 20px;
+    background: #e0f7fa;
+    margin: 0;
+    padding: 20px;
   }
-  h1 {
+  h1, h2 {
     text-align: center;
-    margin-bottom: 10px;
   }
-  #score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-  }
-  #timer {
-    font-size: 1.2em;
-    color: red;
-    margin-bottom: 10px;
-  }
-  .question-container {
-    margin-top: 20px;
-    padding: 10px;
-    border: 2px solid #999;
+  .game-container {
+    max-width: 800px;
+    margin: auto;
+    background: #ffffff;
+    padding: 20px;
     border-radius: 8px;
-    background-color: #fff;
   }
-  #question {
-    font-weight: bold;
+  .question {
+    font-size: 1.2em;
+    margin-top: 20px;
   }
   .answers {
     margin-top: 10px;
   }
-  button {
-    margin: 5px;
+  .answer-btn {
+    display: block;
+    width: 100%;
     padding: 10px;
+    margin-top: 5px;
+    border: none;
+    border-radius: 4px;
+    background-color: #4caf50;
+    color: white;
+    font-size: 1em;
     cursor: pointer;
   }
-  #shop {
-    margin-top: 30px;
-    border-top: 1px solid #999;
-    padding-top: 10px;
+  .answer-btn:hover {
+    background-color: #45a049;
   }
-  #message {
-    margin-top: 10px;
-    font-style: italic;
+  #feedback {
+    margin-top: 15px;
+    font-size: 1.2em;
+  }
+  .shop, .leaderboard {
+    margin-top: 30px;
+  }
+  .section-title {
+    font-weight: bold;
+    font-size: 1.3em;
+    margin-bottom: 10px;
+  }
+  .power-up {
+    margin: 10px 0;
+  }
+  button {
+    padding: 8px 12px;
+    font-size: 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  #leaderboard {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
   }
 </style>
 </head>
 <body>
 
-<h1>Enhanced Science Quiz Game</h1>
-<div id="score">Points: 0</div>
-<div id="timer">Time: 30</div>
-<div class="question-container" id="question-container">
-  <div id="question"></div>
-  <div class="answers" id="answers"></div>
-</div>
-<button onclick="nextQuestion()">Next Question</button>
-
-<div id="shop">
-  <h2>Shop</h2>
-  <p>Use your points to buy hints and cool items!</p>
-  <button onclick="buyHint()">Buy a Beaker (Hint) - 10 points</button>
-  <button onclick="buySkip()">Skip Question - 15 points</button>
-  <div id="message"></div>
+<h1>Science Quiz & Shop Game</h1>
+<div class="game-container">
+  
+  <!-- Quiz Section -->
+  <div id="quiz-section">
+    <div class="section-title">Question <span id="question-number">1</span> of <span id="total-questions"></span></div>
+    <div class="question" id="question-text"></div>
+    <div class="answers" id="answers-container"></div>
+    <div id="feedback"></div>
+    <button id="next-btn" style="display:none;" onclick="nextQuestion()">Next Question</button>
+  </div>
+  
+  <!-- Shop Section -->
+  <div class="shop">
+    <div class="section-title">Shop - Buy Power-Ups</div>
+    <div class="power-up">
+      <button onclick="buyHint()" id="hint-btn">Buy Hint (Cost: 5 coins)</button>
+    </div>
+    <div>Coins: <span id="coins">0</span></div>
+  </div>
+  
+  <!-- Leaderboard -->
+  <div class="leaderboard">
+    <div class="section-title">Leaderboard</div>
+    <div id="leaderboard"></div>
+  </div>
 </div>
 
 <script>
-const totalQuestions = 5;
-let questions = [];
+const questions = [
+  {
+    question: "What is the chemical symbol for water?",
+    options: ["H2O", "CO2", "NaCl", "O2"],
+    answer: "H2O"
+  },
+  {
+    question: "Which planet is known as the red planet?",
+    options: ["Mars", "Venus", "Jupiter", "Saturn"],
+    answer: "Mars"
+  },
+  {
+    question: "What process do plants use to make their food?",
+    options: ["Photosynthesis", "Respiration", "Fermentation", "Digestion"],
+    answer: "Photosynthesis"
+  },
+  {
+    question: "What is the force that keeps us on the ground?",
+    options: ["Gravity", "Magnetism", "Friction", "Inertia"],
+    answer: "Gravity"
+  },
+  {
+    question: "Which gas do humans need to breathe?",
+    options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"],
+    answer: "Oxygen"
+  }
+];
+
 let currentQuestionIndex = 0;
-let points = 0;
+let score = 0;
+let coins = 0;
+let hintsAvailable = 0;
 let hintUsed = false;
-let timerInterval;
-let timeLeft = 30;
 
-function generateQuestions() {
-  questions = [];
-  for (let i = 0; i < totalQuestions; i++) {
-    const qType = Math.floor(Math.random() * 4);
-    let questionText = '';
-    let answers = [];
-    let correctIndex = 0;
+const totalQuestions = questions.length;
 
-    switch(qType) {
-      case 0:
-        questionText = "What is the control in a plant growth experiment?";
-        answers = ["A) The plant with fertilizer", "B) The plant without fertilizer", "C) The sunlight", "D) The water"];
-        correctIndex = 1;
-        break;
-      case 1:
-        questionText = "What is the independent variable?";
-        answers = ["A) The plant's height", "B) The amount of sunlight", "C) The type of soil", "D) Water amount"];
-        correctIndex = 1;
-        break;
-      case 2:
-        questionText = "What is the dependent variable?";
-        answers = ["A) The type of soil", "B) The plant's height", "C) The amount of water", "D) The sunlight"];
-        correctIndex = 1;
-        break;
-      case 3:
-        questionText = "What problem is in this sentence? 'The plant grew taller in the sunlight.'";
-        answers = ["A) The problem isn't clear", "B) The sentence is about sunlight", "C) The sentence is about a plant", "D) The sentence is about growth"];
-        correctIndex = 0;
-        break;
-    }
-    questions.push({question: questionText, answers: answers, correct: correctIndex});
-  }
-}
+window.onload = () => {
+  loadQuestion();
+  loadLeaderboard();
+  document.getElementById('total-questions').innerText = totalQuestions;
+  document.getElementById('coins').innerText = coins;
+};
 
-function startTimer() {
-  clearInterval(timerInterval);
-  timeLeft = 30;
-  document.getElementById('timer').innerText = `Time: ${timeLeft}`;
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    document.getElementById('timer').innerText = `Time: ${timeLeft}`;
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      alert('Time is up! Moving to next question.');
-      nextQuestion();
-    }
-  }, 1000);
-}
+function loadQuestion() {
+  // Reset feedback and buttons
+  document.getElementById('feedback').innerHTML = "";
+  document.getElementById('next-btn').style.display = "none";
 
-function displayQuestion() {
-  if (questions.length === 0) {
-    generateQuestions();
-  }
   const q = questions[currentQuestionIndex];
-  document.getElementById('question').innerText = q.question;
-  const answersDiv = document.getElementById('answers');
-  answersDiv.innerHTML = '';
-  q.answers.forEach((answer, index) => {
+  document.getElementById('question-number').innerText = currentQuestionIndex + 1;
+  document.getElementById('question-text').innerText = q.question;
+
+  const answersContainer = document.getElementById('answers-container');
+  answersContainer.innerHTML = "";
+
+  q.options.forEach(option => {
     const btn = document.createElement('button');
-    btn.innerText = answer;
-    btn.onclick = () => {
-      clearInterval(timerInterval);
-      checkAnswer(index);
-    };
-    answersDiv.appendChild(btn);
+    btn.innerText = option;
+    btn.className = 'answer-btn';
+    btn.onclick = () => checkAnswer(option);
+    answersContainer.appendChild(btn);
   });
-  hintUsed = false;
-  startTimer();
 }
 
-function checkAnswer(selectedIndex) {
+function checkAnswer(selectedOption) {
   const q = questions[currentQuestionIndex];
-  if (selectedIndex === q.correct) {
-    points += 5;
-    alert('Correct! +5 points.');
+  if (selectedOption === q.answer) {
+    document.getElementById('feedback').innerHTML = "<span style='color:green;'>Correct!</span>";
+    score++;
+    coins += 2; // reward coins
   } else {
-    alert('Incorrect.');
+    document.getElementById('feedback').innerHTML = "<span style='color:red;'>Wrong! The correct answer was: " + q.answer + ".</span>";
+    coins += 1; // smaller reward for trying
   }
-  document.getElementById('score').innerText = `Points: ${points}`;
-  currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
-  displayQuestion();
+  updateCoins();
+  // disable answer buttons
+  Array.from(document.getElementById('answers-container').children).forEach(btn => btn.disabled = true);
+  document.getElementById('next-btn').style.display = "inline-block";
 }
 
 function nextQuestion() {
-  clearInterval(timerInterval);
-  displayQuestion();
+  currentQuestionIndex++;
+  if (currentQuestionIndex >= totalQuestions) {
+    endGame();
+  } else {
+    loadQuestion();
+  }
+  document.getElementById('coins').innerText = coins;
+  hintUsed = false; // reset hint for next question
 }
 
+function endGame() {
+  alert(`Game Over! Your score: ${score}/${totalQuestions}`);
+  saveScore();
+  resetGame();
+}
+
+function resetGame() {
+  currentQuestionIndex = 0;
+  score = 0;
+  loadQuestion();
+  document.getElementById('coins').innerText = coins;
+  loadLeaderboard();
+}
+
+function updateCoins() {
+  document.getElementById('coins').innerText = coins;
+}
+
+// Shop functions
 function buyHint() {
-  if (points >= 10 && !hintUsed) {
-    points -= 10;
-    document.getElementById('score').innerText = `Points: ${points}`;
-    document.getElementById('message').innerText = 'Hint: Think about variables and experiment parts!';
+  if (coins >= 5 && !hintUsed) {
+    coins -= 5;
+    updateCoins();
+    hintsAvailable++;
+    alert("You bought a hint! Click 'Hint' during a question.");
+  } else if (hintUsed) {
+    alert("You've already used the hint for this question.");
+  } else {
+    alert("Not enough coins!");
+  }
+}
+
+function showHint() {
+  if (hintsAvailable > 0 && !hintUsed) {
+    const q = questions[currentQuestionIndex];
+    alert("Hint: The answer starts with '" + q.answer.charAt(0) + "'.");
+    hintsAvailable--;
     hintUsed = true;
   } else if (hintUsed) {
-    document.getElementById('message').innerText = 'You already bought a hint for this question!';
+    alert("You've already used the hint for this question.");
   } else {
-    document.getElementById('message').innerText = 'Not enough points!';
+    alert("You haven't bought a hint yet.");
   }
 }
 
-function buySkip() {
-  if (points >= 15) {
-    points -= 15;
-    document.getElementById('score').innerText = `Points: ${points}`;
-    alert('Question skipped!');
-    nextQuestion();
-  } else {
-    document.getElementById('message').innerText = 'Not enough points!';
-  }
+// Save score to local storage and update leaderboard
+function saveScore() {
+  let scores = JSON.parse(localStorage.getItem('leaderboard')) || [];
+  scores.push({name: "Player", score: score});
+  // Keep only top 10
+  scores.sort((a, b) => b.score - a.score);
+  if (scores.length > 10) scores = scores.slice(0,10);
+  localStorage.setItem('leaderboard', JSON.stringify(scores));
 }
 
-// Initialize
-generateQuestions();
-displayQuestion();
+function loadLeaderboard() {
+  const scores = JSON.parse(localStorage.getItem('leaderboard')) || [];
+  const leaderboardDiv = document.getElementById('leaderboard');
+  leaderboardDiv.innerHTML = "";
+  if (scores.length === 0) {
+    leaderboardDiv.innerHTML = "<p>No scores yet.</p>";
+    return;
+  }
+  scores.forEach((entry, index) => {
+    const p = document.createElement('p');
+    p.innerText = `${index+1}. ${entry.name} - ${entry.score}`;
+    leaderboardDiv.appendChild(p);
+  });
+}
+
+// Add a key event for hints
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'h' || e.key === 'H') {
+    showHint();
+  }
+});
 </script>
 
 </body>
